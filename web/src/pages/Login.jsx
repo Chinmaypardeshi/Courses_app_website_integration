@@ -64,86 +64,83 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.password || (isSignup && !formData.name)) {
-      showToast("Kripya sabhi fields fill karein!", "error");
+      showToast("Please fill in all required fields!", "error");
       return;
     }
 
     setLoading(true);
 
     try {
-      let userCredential;
-
       if (isSignup) {
-        // 1. SIGN UP (NEW USER)
-        userCredential = await createUserWithEmailAndPassword(
-          auth, 
-          formData.email.trim(), 
-          formData.password
-        );
+        // 1. SIGN UP (NEW USER) via Unified Backend / Supabase
+        const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name.trim(),
+            fullName: formData.name.trim(),
+            email: formData.email.trim(),
+            password: formData.password,
+          }),
+        });
 
-        const firebaseUser = userCredential.user;
-        await updateProfile(firebaseUser, { displayName: formData.name.trim() });
-        await sendEmailVerification(firebaseUser);
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Registration failed.');
+        }
 
-        // 📧 TRIGGER WELCOME EMAIL ON SIGNUP
-        await triggerWelcomeEmail(formData.email.trim(), formData.name.trim());
-
+        const user = data.user;
         const userData = {
-          uid: firebaseUser.uid,
-          name: formData.name.trim(),
-          email: firebaseUser.email,
-          targetExam: 'UPSC CSE 2027'
+          uid: user.id,
+          id: user.id,
+          name: user.name || formData.name.trim(),
+          email: user.email,
+          role: user.role || 'student',
+          targetExam: 'UPSC CSE 2027',
         };
 
-        const token = await firebaseUser.getIdToken();
         localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', token);
+        localStorage.setItem('token', data.token);
 
-        showToast(`Account Created! Email notification sent to ${formData.email.trim()}`, "success");
-        setTimeout(() => navigate('/home'), 1500);
+        showToast(`Account Created! Welcome, ${formData.name.trim()}!`, "success");
+        setTimeout(() => navigate('/home'), 1000);
 
       } else {
-        // 2. SIGN IN (EXISTING USER LOGIN)
-        userCredential = await signInWithEmailAndPassword(
-          auth, 
-          formData.email.trim(), 
-          formData.password
-        );
+        // 2. SIGN IN (EXISTING USER) via Unified Backend / Supabase
+        const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email.trim(),
+            password: formData.password,
+          }),
+        });
 
-        const firebaseUser = userCredential.user;
-        const userName = firebaseUser.displayName || formData.email.split('@')[0];
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Invalid email or password.');
+        }
 
-        // 📧 TRIGGER NOTIFICATION EMAIL ON LOGIN TOO!
-        await triggerWelcomeEmail(firebaseUser.email, userName);
-
+        const user = data.user;
         const userData = {
-          uid: firebaseUser.uid,
-          name: userName,
-          email: firebaseUser.email,
-          targetExam: 'UPSC CSE 2027'
+          uid: user.id,
+          id: user.id,
+          name: user.name || user.full_name || formData.email.split('@')[0],
+          email: user.email,
+          role: user.role || 'student',
+          targetExam: 'UPSC CSE 2027',
         };
 
-        const token = await firebaseUser.getIdToken();
         localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', token);
+        localStorage.setItem('token', data.token);
 
-        showToast("Login Successful! Notification email dispatched.", "success");
-        setTimeout(() => navigate('/home'), 1000);
+        showToast("Login Successful! Welcome back.", "success");
+        setTimeout(() => navigate('/home'), 800);
       }
 
     } catch (err) {
-      console.error("Firebase Auth Error:", err.code);
-
-      let errorMsg = "Authentication error! Please verify your details.";
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        errorMsg = 'Wrong password or invalid credentials.';
-      } else if (err.code === 'auth/user-not-found') {
-        errorMsg = 'Your email is not registered. Please sign up first.';
-      } else if (err.code === 'auth/email-already-in-use') {
-        errorMsg = 'Your email is already in use. Please sign in instead.';
-      }
-
-      showToast(errorMsg, "error");
+      console.error("Auth Error:", err);
+      showToast(err.message || "Authentication error! Please verify your details.", "error");
     } finally {
       setLoading(false);
     }
@@ -228,7 +225,7 @@ export default function Login() {
             {isSignup ? 'Register UPSC Aspirant' : 'Welcome Back Aspirant'}
           </h2>
           <p style={{ color: '#94a3b8', fontSize: '13px', marginTop: '6px' }}>
-            Firebase Realtime Authenticated Portal
+            Unified Cloud Database Portal
           </p>
         </div>
 
