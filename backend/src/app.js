@@ -82,16 +82,29 @@ app.use('/api/admin', adminRouter);
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/cms', adminRouter);
 
-// Root Welcome Route
-app.get('/', (req, res) => {
-  res.json({
-    platform: 'UPSC EdTech Platform Unified Enterprise Backend',
-    status: 'online',
-    version: '1.0.0',
-    documentation: 'Serves Flutter Mobile and React Web unified API endpoints.',
-    healthEndpoint: '/api/health',
+const path = require('path');
+const fs = require('fs');
+
+// Serve built React Web Frontend if present (Unified Single Service)
+const publicDir = path.join(__dirname, '../public');
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(publicDir, 'index.html'));
   });
-});
+} else {
+  // Fallback root welcome route
+  app.get('/', (req, res) => {
+    res.json({
+      platform: 'UPSC EdTech Platform Unified Enterprise Backend',
+      status: 'online',
+      version: '1.0.0',
+      documentation: 'Serves Flutter Mobile and React Web unified API endpoints.',
+      healthEndpoint: '/api/health',
+    });
+  });
+}
 
 // 5. Error Handlers
 app.use(notFoundHandler);

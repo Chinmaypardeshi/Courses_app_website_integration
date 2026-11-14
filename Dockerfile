@@ -1,18 +1,29 @@
-# Production Dockerfile for Unified UPSC EdTech Backend (Root Context)
+# Multi-stage Dockerfile: Builds Web Frontend and runs Unified Backend
+FROM node:20-alpine AS web-builder
+
+WORKDIR /app/web
+
+# Install web dependencies and build
+COPY web/package*.json ./
+RUN npm install
+COPY web/ .
+RUN npm run build
+
+# Runner stage: Node.js Express backend + static web files
 FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Copy backend dependency files
+# Copy backend dependencies
 COPY backend/package*.json ./
-
-# Install production dependencies
 RUN npm install --omit=dev
 
-# Copy backend source files
+# Copy backend source
 COPY backend/ .
 
-# Set production environment
+# Copy built React frontend to public/
+COPY --from=web-builder /app/web/dist ./public
+
 ENV NODE_ENV=production
 ENV PORT=3000
 
