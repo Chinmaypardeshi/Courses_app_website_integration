@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  upsc-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: upsc_unified_backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres}
+      - DB_SCHEMA=public
+      - JWT_SECRET=${JWT_SECRET:-super_secret_upsc_key_2026_enterprise}
+      - JWT_EXPIRES_IN=7d
+      - GROQ_API_KEY=${GROQ_API_KEY:-your_groq_api_key_here}
+      - EMAIL_USER=${EMAIL_USER:-your_email@gmail.com}
+      - EMAIL_PASS=${EMAIL_PASS:-your_email_app_password}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-rzp_test_xxxx}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-your_razorpay_secret}
+      - CORS_ORIGIN=*
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3

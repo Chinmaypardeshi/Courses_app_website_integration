@@ -1,0 +1,59 @@
+# Render Blueprint Specification for UPSC EdTech Unified Platform
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Unified Node.js / Express Backend Web Service
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: upsc-unified-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SCHEMA
+        value: public
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: GROQ_API_KEY
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"
+
+  # ----------------------------------------------------------------------------
+  # 2. React Web Client (Static Site with SPA Rewrites)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: upsc-web-frontend
+    runtime: static
+    rootDir: web
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: upsc-unified-backend
+          property: host
