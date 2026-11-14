@@ -171,6 +171,11 @@ export default function CourseCatalog() {
       console.log("Backend offline notice, running frontend test mode.");
     }
 
+    if (!orderId || orderId.startsWith('order_mock_') || razorpayKey === 'rzp_test_Tg8WnGKY0mO0gA') {
+      setIsCheckoutOpen(true);
+      return;
+    }
+
     const options = {
       key: razorpayKey,
       amount: course.price * 100,
