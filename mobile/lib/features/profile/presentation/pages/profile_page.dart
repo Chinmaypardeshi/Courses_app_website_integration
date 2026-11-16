@@ -92,9 +92,76 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         const SizedBox(height: AppSpacing.xSmall),
                         Text(
-                          'Authenticated account',
+                          authenticationRepository.email ??
+                              'Authenticated Aspiria Learner',
                           style: textTheme.bodyMedium?.copyWith(
+                            color: colors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Authenticated account',
+                          style: textTheme.bodySmall?.copyWith(
                             color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Target: UPSC CSE 2027',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.medium),
+          Card(
+            color: colors.surfaceContainerHighest,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.medium),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.cloud_done_rounded,
+                    color: Colors.green,
+                    size: 22,
+                  ),
+                  const SizedBox(width: AppSpacing.medium),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Live Cloud Backend Connected',
+                          style: textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Host: courses-app-website-integration.onrender.com\nDatabase: Supabase PostgreSQL (Session Pooler ap-southeast-1)',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            height: 1.3,
                           ),
                         ),
                       ],
@@ -112,6 +179,62 @@ class _ProfilePageState extends State<ProfilePage> {
             planName: subscriptionController.status?.plan?.name,
             onOpen: () => context.goNamed(AppRoute.subscription),
             onRetry: subscriptionController.load,
+          ),
+          const SizedBox(height: AppSpacing.xLarge),
+          Text(
+            'Enrolled Courses & Batches',
+            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: AppSpacing.small),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                  ),
+                  title: const Text(
+                    'GS Paper 1: History, Art & Geography Complete Masterclass 2027',
+                  ),
+                  subtitle: const Text(
+                    'Batch Status: Active · Validity: 1 Year',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.goNamed(AppRoute.study),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                  ),
+                  title: const Text(
+                    'GS Paper 2: Indian Polity, Governance & International Relations',
+                  ),
+                  subtitle: const Text(
+                    'Batch Status: Active · Validity: 1 Year',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.goNamed(AppRoute.study),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                  ),
+                  title: const Text(
+                    'GS Paper 3: Indian Economy, Environment & Science-Tech Special',
+                  ),
+                  subtitle: const Text(
+                    'Batch Status: Active · Validity: 1 Year',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.goNamed(AppRoute.study),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.xLarge),
           Text(

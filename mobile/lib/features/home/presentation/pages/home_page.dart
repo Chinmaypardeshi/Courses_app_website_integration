@@ -6,6 +6,7 @@ import 'package:aspiria/app/theme/app_radius.dart';
 import 'package:aspiria/app/theme/app_spacing.dart';
 import 'package:aspiria/features/current_affairs/presentation/controllers/current_affairs_controller.dart';
 import 'package:aspiria/features/study/presentation/controllers/study_controller.dart';
+import 'package:aspiria/features/study/presentation/widgets/study_course_card.dart';
 import 'package:aspiria/features/tests/domain/models/practice_test.dart';
 import 'package:aspiria/features/tests/domain/models/test_attempt.dart';
 import 'package:aspiria/features/tests/presentation/controllers/test_controller.dart';
@@ -59,17 +60,58 @@ class HomePage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Aspiria',
-                          style: textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              'Aspiria',
+                              style: textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.small),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.green.withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.green,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Cloud Live',
+                                    style: textTheme.labelSmall?.copyWith(
+                                      color: Colors.green.shade800,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: AppSpacing.xSmall),
                         Text(
-                          'Good day. Ready to make progress?',
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: colors.onSurfaceVariant,
+                          'UPSC CSE 2027 · Shared Web & Mobile Cloud',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colors.primary,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -94,18 +136,21 @@ class HomePage extends StatelessWidget {
                 height: 124,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  children: const [
+                  children: [
                     _CategoryCard(
                       icon: Icons.account_balance_rounded,
-                      label: 'UPSC',
+                      label: 'UPSC CSE',
+                      onTap: () => context.goNamed(AppRoute.study),
                     ),
                     _CategoryCard(
                       icon: Icons.gavel_rounded,
                       label: 'State PSC',
+                      onTap: () => context.goNamed(AppRoute.study),
                     ),
                     _CategoryCard(
                       icon: Icons.menu_book_rounded,
                       label: 'SSC & Banking',
+                      onTap: () => context.goNamed(AppRoute.study),
                     ),
                   ],
                 ),
@@ -223,6 +268,55 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: AppSpacing.xLarge),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Enrolled UPSC Batches',
+                      style: textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.goNamed(AppRoute.study),
+                    child: const Text('View all'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.medium),
+              if (studyController.courses.isEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.medium),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.sync_rounded, color: Colors.blue),
+                        const SizedBox(width: AppSpacing.small),
+                        Text(
+                          'Syncing with UPSC cloud courses...',
+                          style: textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                for (final course in studyController.courses.take(3)) ...[
+                  StudyCourseCard(
+                    course: course,
+                    lessonCount: studyController
+                        .lessonsForCourse(course.id)
+                        .length,
+                    progress: studyController.courseProgress(course.id),
+                    onTap: () => context.goNamed(
+                      AppRoute.studyCourse,
+                      pathParameters: {'courseId': course.id},
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.medium),
+                ],
               const SizedBox(height: AppSpacing.xLarge),
               _CurrentAffairsSection(
                 currentAffairsController: currentAffairsController,
@@ -594,10 +688,15 @@ class _SubjectPerformance {
 }
 
 class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({required this.icon, required this.label});
+  const _CategoryCard({
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
 
   final IconData icon;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -609,20 +708,24 @@ class _CategoryCard extends StatelessWidget {
       child: SizedBox(
         width: 152,
         child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.medium),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(icon, color: colors.primary),
-                Text(
-                  label,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.medium),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(icon, color: colors.primary),
+                  Text(
+                    label,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

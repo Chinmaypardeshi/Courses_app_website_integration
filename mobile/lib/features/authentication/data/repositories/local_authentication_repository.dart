@@ -7,6 +7,7 @@ import '../../domain/repositories/authentication_repository.dart';
 class LocalAuthenticationRepository extends AuthenticationRepository {
   var _isAuthenticated = false;
   var _displayName = 'Aspiria Learner';
+  String? _email;
 
   @override
   bool get isAuthenticated => _isAuthenticated;
@@ -15,11 +16,15 @@ class LocalAuthenticationRepository extends AuthenticationRepository {
   String get displayName => _displayName;
 
   @override
+  String? get email => _email;
+
+  @override
   String? get accessToken => null;
 
   @override
   Future<void> signIn({required String email, required String password}) async {
     _isAuthenticated = true;
+    _email = email.trim();
     notifyListeners();
   }
 
@@ -31,6 +36,7 @@ class LocalAuthenticationRepository extends AuthenticationRepository {
   }) async {
     _displayName = fullName.trim();
     _isAuthenticated = true;
+    _email = email.trim();
     notifyListeners();
   }
 
@@ -38,6 +44,7 @@ class LocalAuthenticationRepository extends AuthenticationRepository {
   Future<void> signOut() async {
     _isAuthenticated = false;
     _displayName = 'Aspiria Learner';
+    _email = null;
     notifyListeners();
   }
 }

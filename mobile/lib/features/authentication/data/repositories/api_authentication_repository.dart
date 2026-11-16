@@ -19,6 +19,7 @@ class ApiAuthenticationRepository extends AuthenticationRepository {
 
   bool _isAuthenticated = false;
   String _displayName = 'Aspiria Learner';
+  String? _email;
   String? _accessToken;
 
   @override
@@ -26,6 +27,9 @@ class ApiAuthenticationRepository extends AuthenticationRepository {
 
   @override
   String get displayName => _displayName;
+
+  @override
+  String? get email => _email;
 
   /// The current backend-issued token, kept only for this app session.
   String? get accessToken => _accessToken;
@@ -55,6 +59,7 @@ class ApiAuthenticationRepository extends AuthenticationRepository {
   Future<void> signOut() async {
     _isAuthenticated = false;
     _displayName = 'Aspiria Learner';
+    _email = null;
     _accessToken = null;
     notifyListeners();
   }
@@ -83,6 +88,7 @@ class ApiAuthenticationRepository extends AuthenticationRepository {
       final token = body?['token'];
       final user = body?['user'];
       final name = user is Map<String, dynamic> ? user['name'] : null;
+      final email = user is Map<String, dynamic> ? user['email'] : payload['email'];
       if (token is! String || token.isEmpty || name is! String || name.isEmpty) {
         throw const AuthenticationApiException(
           'The authentication response was invalid.',
@@ -91,6 +97,7 @@ class ApiAuthenticationRepository extends AuthenticationRepository {
 
       _accessToken = token;
       _displayName = name;
+      _email = email is String ? email : payload['email'];
       _isAuthenticated = true;
       notifyListeners();
     } on AuthenticationApiException {

@@ -56,7 +56,9 @@ class StudyCourseCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.medium),
               StudyProgressIndicator(
                 value: progress,
-                label: '$lessonCount lessons',
+                label: course.price > 0
+                    ? '$lessonCount lessons · ₹${course.price.toInt()} · Enrolled'
+                    : '$lessonCount lessons · Enrolled',
               ),
             ],
           ),

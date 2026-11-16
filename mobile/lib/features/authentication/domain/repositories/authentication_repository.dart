@@ -9,6 +9,9 @@ abstract class AuthenticationRepository extends ChangeNotifier {
 
   String get displayName;
 
+  /// User email associated with the authenticated session, if available.
+  String? get email => null;
+
   /// Backend-issued token for the current session, if the implementation has one.
   String? get accessToken;
 
