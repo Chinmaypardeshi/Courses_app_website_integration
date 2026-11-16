@@ -154,7 +154,7 @@ async function seed() {
         slug: 'preamble-and-salient-features',
         title: 'Preamble and Salient Features of the Indian Constitution',
         content: `# Preamble & Constitutional Foundations\n\nThe Preamble embodies the philosophy and values that form the bedrock of the Constitution of India.\n\n### Key Keywords:\n- **Sovereign**: Supreme and independent authority without external control.\n- **Socialist**: Democratic socialism pursuing elimination of poverty, ignorance, and inequality.\n- **Secular**: Equal respect and state protection for all religions (Articles 25-28).\n- **Democratic**: Representative parliamentary democracy under universal adult franchise.\n- **Republic**: Head of State is elected (President of India), not hereditary.\n\n### Landmark Judgments:\n1. *Berubari Union Case (1960)*: Preamble not considered part of Constitution.\n2. *Kesavananda Bharati (1973)*: Overruled Berubari; affirmed Preamble is an integral part and subject to Basic Structure doctrine.`,
-        video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        video_url: 'https://vjs.zencdn.net/v/oceans.mp4',
         duration: '45 mins',
         access_tier: 'free',
         sort_order: 1
@@ -164,7 +164,7 @@ async function seed() {
         slug: 'fundamental-rights-art-12-35',
         title: 'Fundamental Rights (Articles 12 to 35) & Judicial Review',
         content: `# Fundamental Rights & Doctrine of Basic Structure\n\nPart III of the Indian Constitution guarantees Fundamental Rights. Key doctrines include:\n- **Doctrine of Severability (Art 13(1))**\n- **Doctrine of Eclipse**\n- **Right to Equality (Art 14 - 18)**: Prohibits arbitrariness (*E.P. Royappa* test).\n- **Right to Freedom (Art 19 - 22)**: Protection of freedoms subject to reasonable restrictions (*Art 19(2)*).\n- **Right to Life and Personal Liberty (Art 21)**: Expanded via *Maneka Gandhi (1978)* to include right to clean environment, privacy (*Puttaswamy 2017*), and dignified livelihood.`,
-        video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+        video_url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
         duration: '60 mins',
         access_tier: 'free',
         sort_order: 2
@@ -174,7 +174,7 @@ async function seed() {
         slug: 'directive-principles-and-duties',
         title: 'Directive Principles of State Policy & Fundamental Duties',
         content: `# DPSPs (Part IV) & Fundamental Duties (Part IVA)\n\n### Harmonious Construction\nIn *Minerva Mills (1980)*, the Supreme Court held that the Indian Constitution is founded on the bedrock of the balance between Fundamental Rights and DPSPs.\n\n### Classification of DPSPs:\n1. Socialistic Principles (Arts 38, 39, 39A, 41, 42, 43)\n2. Gandhian Principles (Arts 40, 43, 43B, 46, 47, 48)\n3. Liberal-Intellectual (Arts 44, 45, 48A, 49, 50, 51)`,
-        video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        video_url: 'https://vjs.zencdn.net/v/oceans.mp4',
         duration: '50 mins',
         access_tier: 'premium',
         sort_order: 3
@@ -185,7 +185,7 @@ async function seed() {
         slug: 'revolt-of-1857-origins-impact',
         title: 'The Great Revolt of 1857: Causes, Key Centers & Impact',
         content: `# The Revolt of 1857: Watershed Moment\n\n### Multi-dimensional Causes:\n- **Economic**: Ruin of handicrafts, drain of wealth, heavy land revenue assessments (Permanent, Ryotwari, Mahalwari).\n- **Political**: Doctrine of Lapse by Lord Dalhousie (Satara, Jhansi, Nagpur annexed).\n- **Military**: Discrimination in pay, general service enlistment act.\n- **Immediate**: Introduction of Enfield rifle cartridges.\n\n### Consequences:\n- Government of India Act 1858 transferred power from East India Company to the British Crown.\n- Queen Victoria's Proclamation promising non-interference in religious beliefs.`,
-        video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+        video_url: 'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
         duration: '55 mins',
         access_tier: 'premium',
         sort_order: 1
@@ -195,7 +195,7 @@ async function seed() {
         slug: 'plate-tectonics-geomorphology',
         title: 'Plate Tectonics & Continental Drift in Physical Geography',
         content: `# Plate Tectonics & Earth Dynamics\n\n### Key Concepts:\n- **Wegener Continental Drift Hypothesis (1912)**\n- **Sea Floor Spreading (Harry Hess 1960)**\n- **Plate Boundaries**:\n  1. Convergent (Destructive - Himalayas, Mariana Trench)\n  2. Divergent (Constructive - Mid-Atlantic Ridge)\n  3. Transform (Conservative - San Andreas Fault)\n\n### Volcanism & Seismic Belts:\nPacific Ring of Fire accounts for >75% of worldwide active volcanism and earthquakes.`,
-        video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+        video_url: 'https://vjs.zencdn.net/v/oceans.mp4',
         duration: '65 mins',
         access_tier: 'premium',
         sort_order: 2

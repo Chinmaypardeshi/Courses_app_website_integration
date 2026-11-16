@@ -7,7 +7,7 @@ import '../../domain/repositories/video_learning_repository.dart';
 /// present them as hosted course videos.
 class LocalVideoLearningRepository implements VideoLearningRepository {
   static final Uri _demoVideoReference = Uri.parse(
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    'https://vjs.zencdn.net/v/oceans.mp4',
   );
 
   @override
