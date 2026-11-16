@@ -2,6 +2,7 @@ import 'package:aspiria/app/theme/app_spacing.dart';
 import 'package:aspiria/app/router/app_router.dart';
 import 'package:aspiria/features/study/presentation/controllers/study_controller.dart';
 import 'package:aspiria/features/video_learning/presentation/controllers/video_learning_controller.dart';
+import 'package:aspiria/features/video_learning/presentation/widgets/video_player_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -54,6 +55,11 @@ class LessonDetailPage extends StatelessWidget {
         final colors = Theme.of(context).colorScheme;
         final textTheme = Theme.of(context).textTheme;
         final lessonVideos = videoLearningController.videosForLesson(lesson.id);
+        final effectiveVideoUrl = lesson.videoUrl.isNotEmpty
+            ? lesson.videoUrl
+            : (lessonVideos.isNotEmpty
+                ? lessonVideos.first.videoReference.toString()
+                : '');
         return Scaffold(
           appBar: AppBar(title: const Text('Lesson')),
           body: SafeArea(
@@ -75,6 +81,13 @@ class LessonDetailPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (effectiveVideoUrl.isNotEmpty) ...[
+                            VideoPlayerWidget(
+                              videoUrl: effectiveVideoUrl,
+                              aspectRatio: 16 / 9,
+                            ),
+                            const SizedBox(height: AppSpacing.medium),
+                          ],
                           Text(
                             lesson.content,
                             style: textTheme.bodyLarge?.copyWith(

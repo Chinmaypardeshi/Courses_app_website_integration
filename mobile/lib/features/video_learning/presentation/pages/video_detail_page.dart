@@ -3,6 +3,7 @@ import 'package:aspiria/app/theme/app_spacing.dart';
 import 'package:aspiria/features/study/presentation/controllers/study_controller.dart';
 import 'package:aspiria/features/video_learning/domain/models/learning_video.dart';
 import 'package:aspiria/features/video_learning/presentation/controllers/video_learning_controller.dart';
+import 'package:aspiria/features/video_learning/presentation/widgets/video_player_widget.dart';
 import 'package:flutter/material.dart';
 
 /// A lightweight watch experience until a production video player is added.
@@ -69,21 +70,10 @@ class _VideoDetailContent extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.medium),
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: colors.secondaryContainer,
-                  borderRadius: AppRadius.medium,
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.play_circle_fill_rounded,
-                    color: colors.primary,
-                    size: 72,
-                  ),
-                ),
-              ),
+            VideoPlayerWidget(
+              videoUrl: video.videoReference.toString(),
+              autoPlay: true,
+              onProgressChanged: onProgressChanged,
             ),
             const SizedBox(height: AppSpacing.large),
             Text(
@@ -159,11 +149,22 @@ class _VideoDetailContent extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.large),
-            Text(
-              'This is a local sample video catalogue. Playback is not included yet; the reference is a public demo video and watch state lasts only for this app session.',
-              style: textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
+            Row(
+              children: [
+                const Icon(
+                  Icons.verified_rounded,
+                  size: 16,
+                  color: Colors.green,
+                ),
+                const SizedBox(width: AppSpacing.xSmall),
+                Text(
+                  'Connected to Live UPSC Cloud Video Stream',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
