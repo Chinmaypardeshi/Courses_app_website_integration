@@ -8,8 +8,8 @@ const env = {
   groqApiKey: process.env.GROQ_API_KEY || '',
   emailUser: process.env.EMAIL_USER || '',
   emailPass: process.env.EMAIL_PASS || '',
-  razorpayKeyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_Tg8WnGKY0mO0gA',
-  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || 'rzp_test_secret_key_123',
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
   corsOrigin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['*'],
 };
 

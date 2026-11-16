@@ -1,15 +1,32 @@
 const { Router } = require('express');
 const { pool } = require('../db/pool');
-const { createRazorpayOrder, verifyPaymentSignature } = require('../services/payment');
+const { createRazorpayOrder, verifyPaymentSignature, isGatewayConfigured } = require('../services/payment');
 const { optionalAuthenticate, authenticate } = require('../middleware/authenticate');
+const { env } = require('../config/env');
 
 const paymentsRouter = Router();
 
-// 1. Create Razorpay Order
+// Check Gateway Status
+paymentsRouter.get('/v1/payment/status', (req, res) => {
+  return res.json({
+    configured: isGatewayConfigured(),
+    keyId: env.razorpayKeyId || null,
+  });
+});
+
+// 1. Create Authentic Razorpay Order
 async function handleCreateOrder(req, res) {
   const { amount, currency = 'INR', courseId, courseName, customerName, customerEmail, customerPhone } = req.body;
   if (!amount || Number(amount) <= 0) {
     return res.status(400).json({ success: false, error: 'Valid payment amount is required.' });
+  }
+
+  if (!isGatewayConfigured()) {
+    return res.status(400).json({
+      success: false,
+      configured: false,
+      error: 'Razorpay payment gateway is not configured yet. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in your backend environment variables.',
+    });
   }
 
   const userId = req.auth?.userId || null;
@@ -18,7 +35,11 @@ async function handleCreateOrder(req, res) {
   try {
     const orderResult = await createRazorpayOrder({ amount, currency, receipt });
     if (!orderResult.success) {
-      return res.status(500).json({ success: false, error: 'Could not initialize gateway order.' });
+      return res.status(502).json({
+        success: false,
+        configured: true,
+        error: orderResult.error || 'Could not initialize gateway order with Razorpay.',
+      });
     }
 
     const order = orderResult.order;
@@ -42,11 +63,12 @@ async function handleCreateOrder(req, res) {
 
     return res.status(200).json({
       success: true,
+      configured: true,
       order,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_Tg8WnGKY0mO0gA',
+      keyId: env.razorpayKeyId,
     });
   } catch (err) {
     console.error('Create Order Error:', err);
@@ -54,15 +76,15 @@ async function handleCreateOrder(req, res) {
   }
 }
 
-// 2. Verify Payment
+// 2. Verify Cryptographic Payment Signature
 async function handleVerifyPayment(req, res) {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId, paymentId, signature } = req.body;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId, paymentId, signature, courseId } = req.body;
   const oId = razorpay_order_id || orderId;
   const pId = razorpay_payment_id || paymentId;
   const sig = razorpay_signature || signature;
 
-  if (!oId || !pId) {
-    return res.status(400).json({ success: false, error: 'Missing order_id or payment_id.' });
+  if (!oId || !pId || !sig) {
+    return res.status(400).json({ success: false, error: 'Missing order_id, payment_id, or signature.' });
   }
 
   const isValid = verifyPaymentSignature({ orderId: oId, paymentId: pId, signature: sig });
@@ -74,9 +96,8 @@ async function handleVerifyPayment(req, res) {
       WHERE order_id = $4
     `, [pId, sig || '', isValid ? 'paid' : 'failed', oId]);
 
-    // If order was for a course or subscription, grant subscription if applicable
+    // If payment verified and user is authenticated, grant subscription
     if (isValid && req.auth?.userId) {
-      // Grant active subscription
       await pool.query(`
         INSERT INTO user_subscriptions (user_id, plan_id, status, starts_at, ends_at)
         VALUES ($1, 2, 'active', NOW(), NOW() + INTERVAL '365 days')
@@ -85,7 +106,9 @@ async function handleVerifyPayment(req, res) {
 
     return res.status(200).json({
       success: isValid,
-      message: isValid ? 'Payment verified successfully! Course unlocked.' : 'Payment verification failed.',
+      paymentId: pId,
+      orderId: oId,
+      message: isValid ? 'Payment verified successfully! Course unlocked.' : 'Payment signature verification failed.',
     });
   } catch (err) {
     console.error('Verify Payment Error:', err);
