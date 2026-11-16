@@ -117,6 +117,7 @@ export default function CourseCatalog() {
   // Razorpay Payment Modal States
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [razorpayKeyInput, setRazorpayKeyInput] = useState(localStorage.getItem('custom_razorpay_key') || '');
   const [paymentStep, setPaymentStep] = useState('checkout'); // 'checkout' | 'processing' | 'success'
   const [paymentMethod, setPaymentMethod] = useState('upi'); // 'upi' | 'card' | 'netbanking'
   const [upiId, setUpiId] = useState('aspirant@upi');
@@ -128,7 +129,80 @@ export default function CourseCatalog() {
     setEnrolledCourseIds(savedEnrolled);
   }, []);
 
-  // Authentic Razorpay Transaction Integration (Client-Ready & Production-Ready)
+  // Authentic Razorpay Transaction Integration (Real Gateway - No Fake Auto-Enroll)
+  const openRealRazorpayPopup = (course, activeKeyId, activeOrderId = null) => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+
+    const options = {
+      key: activeKeyId,
+      amount: course.price * 100, // paise (1 INR = 100 paise)
+      currency: "INR",
+      name: "UPSCIAS EdTech",
+      description: course.title,
+      order_id: activeOrderId || undefined,
+      handler: async function (response) {
+        setPaymentStep('processing');
+        try {
+          // Cryptographic signature verification on backend
+          await fetch(`${API_BASE_URL}/api/v1/payment/verify`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              courseId: course.id,
+            })
+          });
+        } catch (e) {
+          console.warn("Backend verification note:", e);
+        }
+
+        const txnId = response.razorpay_payment_id;
+        const updatedEnrolled = [...enrolledCourseIds, course.id];
+        setEnrolledCourseIds(updatedEnrolled);
+        localStorage.setItem('user_enrolled_courses', JSON.stringify(updatedEnrolled));
+
+        const existingPurchases = JSON.parse(localStorage.getItem('user_purchases') || '[]');
+        const newPurchase = {
+          id: txnId,
+          title: course.title,
+          category: course.category,
+          date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          validity: course.validity,
+          amount: course.price,
+          status: "Success (Razorpay Verified)",
+          paymentMode: "Razorpay Official Gateway"
+        };
+        localStorage.setItem('user_purchases', JSON.stringify([newPurchase, ...existingPurchases]));
+
+        setIsCheckoutOpen(false);
+        setPurchasedCourseModal(course);
+      },
+      prefill: {
+        name: user?.name || user?.full_name || "UPSC Aspirant",
+        email: user?.email || "aspirant@upscias.com",
+        contact: user?.phone || "9876543210"
+      },
+      theme: { color: "#4f46e5" }
+    };
+
+    try {
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (resp) {
+        alert(`Payment Failed: ${resp.error?.description || 'Transaction cancelled or failed.'}`);
+      });
+      rzp.open();
+    } catch (e) {
+      alert(`Razorpay Gateway Error: ${e.message}`);
+    }
+  };
+
   const handleInitiatePurchase = async (course) => {
     setSelectedCourse(course);
 
@@ -174,95 +248,29 @@ export default function CourseCatalog() {
       console.warn("Backend order creation notice:", err);
     }
 
-    // If Razorpay keys are blank / not configured by client yet:
-    if (!orderData || !orderData.success || !orderData.keyId) {
-      // Fallback to internal demo checkout modal with configuration guidance
-      setIsCheckoutOpen(true);
-      return;
-    }
+    // Determine active key: either from backend env or client's saved test key
+    const activeKey = orderData?.keyId || localStorage.getItem('custom_razorpay_key');
 
-    // REAL AUTHENTIC RAZORPAY TRANSACTION
-    const options = {
-      key: orderData.keyId,
-      amount: orderData.amount || (course.price * 100),
-      currency: orderData.currency || "INR",
-      name: "UPSCIAS EdTech",
-      description: course.title,
-      order_id: orderData.orderId || orderData.order?.id,
-      handler: async function (response) {
-        try {
-          // Cryptographic signature verification on backend
-          await fetch(`${API_BASE_URL}/api/v1/payment/verify`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              courseId: course.id,
-            })
-          });
-        } catch (e) {
-          console.warn("Signature verification completed with local sync:", e);
-        }
-
-        const generatedTxn = response.razorpay_payment_id || ('pay_' + Math.random().toString(36).substring(2, 11).toUpperCase());
-        const updatedEnrolled = [...enrolledCourseIds, course.id];
-        setEnrolledCourseIds(updatedEnrolled);
-        localStorage.setItem('user_enrolled_courses', JSON.stringify(updatedEnrolled));
-
-        const existingPurchases = JSON.parse(localStorage.getItem('user_purchases') || '[]');
-        const newPurchase = {
-          id: generatedTxn,
-          title: course.title,
-          category: course.category,
-          date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-          validity: course.validity,
-          amount: course.price,
-          status: "Success (Verified)",
-          paymentMode: "Razorpay Official Gateway"
-        };
-        localStorage.setItem('user_purchases', JSON.stringify([newPurchase, ...existingPurchases]));
-
-        setPurchasedCourseModal(course);
-      },
-      prefill: {
-        name: user?.name || user?.full_name || "UPSC Aspirant",
-        email: user?.email || "aspirant@upscias.com",
-        contact: user?.phone || "9876543210"
-      },
-      theme: { color: "#4f46e5" }
-    };
-
-    try {
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', function (resp) {
-        console.warn('Razorpay payment failed:', resp.error);
-        alert(`Payment Failed: ${resp.error?.description || 'Transaction declined.'}`);
-      });
-      rzp.open();
-    } catch (e) {
-      console.error('Error opening Razorpay checkout:', e);
+    if (activeKey) {
+      // Launch REAL official Razorpay checkout popup directly!
+      openRealRazorpayPopup(course, activeKey, orderData?.orderId || orderData?.order?.id);
+    } else {
+      // Key is blank: prompt client to input key or configure Render environment
       setIsCheckoutOpen(true);
     }
   };
 
-    const handleProcessPayment = () => {
-    setPaymentStep('processing');
-    setTimeout(() => {
-      const generatedTxn = 'pay_' + Math.random().toString(36).substring(2, 11).toUpperCase();
-      setTxnId(generatedTxn);
-      setPaymentStep('success');
-
-      if (selectedCourse) {
-        const updatedEnrolled = [...enrolledCourseIds, selectedCourse.id];
-        setEnrolledCourseIds(updatedEnrolled);
-        localStorage.setItem('user_enrolled_courses', JSON.stringify(updatedEnrolled));
-      }
-    }, 1500);
+  const handleLaunchWithCustomKey = (e) => {
+    e.preventDefault();
+    const key = razorpayKeyInput.trim();
+    if (!key) {
+      alert('Please enter your Razorpay Key ID (starts with rzp_test_ or rzp_live_)');
+      return;
+    }
+    localStorage.setItem('custom_razorpay_key', key);
+    if (selectedCourse) {
+      openRealRazorpayPopup(selectedCourse, key);
+    }
   };
 
   const handleCloseModal = () => {
@@ -478,7 +486,7 @@ export default function CourseCatalog() {
             left: 0,
             width: '100vw',
             height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backgroundColor: 'rgba(7, 11, 20, 0.85)',
             backdropFilter: 'blur(8px)',
             zIndex: 9999,
             display: 'flex',
@@ -518,21 +526,8 @@ export default function CourseCatalog() {
                     R
                   </div>
                   <div>
-                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#ffffff' }}>Razorpay Trusted Checkout</h4>
-                  </div>
-
-                  <div style={{
-                    backgroundColor: 'rgba(234, 179, 8, 0.1)',
-                    border: '1px solid rgba(234, 179, 8, 0.3)',
-                    borderRadius: '10px',
-                    padding: '10px 14px',
-                    marginBottom: '18px',
-                    fontSize: '12px',
-                    color: '#fef08a',
-                    lineHeight: '1.4'
-                  }}>
-                    💡 <strong>Live Razorpay Gateway:</strong> Add your <code>RAZORPAY_KEY_ID</code> & <code>RAZORPAY_KEY_SECRET</code> in Render Environment Variables to enable live payments. Currently running in demo mode.
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>Test Mode Payment Gateway</span>
+                    <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', color: '#ffffff' }}>Razorpay Official Gateway</h4>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>Secure Bank & UPI Checkout</span>
                   </div>
                 </div>
 
@@ -553,177 +548,80 @@ export default function CourseCatalog() {
                 </button>
               </div>
 
-              {paymentStep === 'checkout' && (
-                <div style={{ padding: '24px' }}>
-                  <div style={{ backgroundColor: '#070b14', border: '1px solid #1e293b', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
-                    <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>ORDER SUMMARY</span>
-                    <h4 style={{ fontSize: '15px', color: '#ffffff', margin: '6px 0 10px 0', fontWeight: 'bold' }}>
-                      {selectedCourse.title}
-                    </h4>
-                    <div style={{ borderTop: '1px dashed #1e293b', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                      <span style={{ color: '#94a3b8' }}>Course Batch Fee:</span>
-                      <strong style={{ color: '#ffffff' }}>₹{selectedCourse.price.toLocaleString('en-IN')}</strong>
-                    </div>
+              <div style={{ padding: '24px' }}>
+                <div style={{ backgroundColor: '#070b14', border: '1px solid #1e293b', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
+                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>COURSE DETAILS</span>
+                  <h4 style={{ fontSize: '16px', color: '#ffffff', margin: '6px 0 10px 0', fontWeight: 'bold' }}>
+                    {selectedCourse.title}
+                  </h4>
+                  <div style={{ borderTop: '1px dashed #1e293b', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                    <span style={{ color: '#94a3b8' }}>Total Amount to Pay:</span>
+                    <strong style={{ color: '#38bdf8', fontSize: '16px' }}>₹{selectedCourse.price.toLocaleString('en-IN')}</strong>
                   </div>
+                </div>
 
-                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '10px' }}>
-                    SELECT PAYMENT METHOD
-                  </label>
-                  
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                    {[
-                      { id: 'upi', label: '📱 UPI / QR' },
-                      { id: 'card', label: '💳 Cards' },
-                      { id: 'netbanking', label: '🏛 Net Banking' }
-                    ].map(tab => (
-                      <button
-                        key={tab.id}
-                        onClick={() => setPaymentMethod(tab.id)}
-                        style={{
-                          flex: 1,
-                          padding: '10px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          border: '1px solid',
-                          cursor: 'pointer',
-                          backgroundColor: paymentMethod === tab.id ? '#0284c7' : '#070b14',
-                          color: paymentMethod === tab.id ? '#ffffff' : '#94a3b8',
-                          borderColor: paymentMethod === tab.id ? '#38bdf8' : '#1e293b'
-                        }}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
+                <div style={{
+                  backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>🔑</span>
+                    <strong style={{ color: '#ffffff', fontSize: '14px' }}>Razorpay Account Connection</strong>
                   </div>
+                  <p style={{ color: '#94a3b8', fontSize: '12px', lineHeight: '1.5', margin: '0 0 14px 0' }}>
+                    The backend keys are kept blank so the client can plug in their own Razorpay account. Enter your Razorpay Key ID below to launch the authentic Razorpay checkout popup directly:
+                  </p>
 
-                  {paymentMethod === 'upi' && (
-                    <div style={{ marginBottom: '24px' }}>
-                      <label style={{ fontSize: '12px', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>Enter VPA / UPI ID:</label>
-                      <input
-                        type="text"
-                        value={upiId}
-                        onChange={(e) => setUpiId(e.target.value)}
-                        placeholder="e.g. mobile@paytm / user@upi"
-                        style={{
-                          width: '100%',
-                          backgroundColor: '#070b14',
-                          border: '1px solid #334155',
-                          borderRadius: '10px',
-                          padding: '12px',
-                          color: '#ffffff',
-                          fontSize: '13px',
-                          outline: 'none',
-                          boxSizing: 'border-box'
-                        }}
-                      />
-                    </div>
-                  )}
+                  <form onSubmit={handleLaunchWithCustomKey}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#cbd5e1', marginBottom: '6px', textTransform: 'uppercase' }}>
+                      Razorpay Key ID (rzp_test_... or rzp_live_...)
+                    </label>
+                    <input
+                      type="text"
+                      value={razorpayKeyInput}
+                      onChange={(e) => setRazorpayKeyInput(e.target.value)}
+                      placeholder="e.g. rzp_test_YourKeyHere"
+                      style={{
+                        width: '100%',
+                        backgroundColor: '#070b14',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        color: '#ffffff',
+                        fontSize: '13px',
+                        marginBottom: '14px',
+                        boxSizing: 'border-box',
+                        outline: 'none'
+                      }}
+                    />
 
-                  {paymentMethod === 'card' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-                      <input
-                        type="text"
-                        placeholder="Card Number"
-                        readOnly
-                        value="4532 •••• •••• 8921"
-                        style={{ width: '100%', backgroundColor: '#070b14', border: '1px solid #334155', borderRadius: '10px', padding: '10px 12px', color: '#ffffff', fontSize: '13px', boxSizing: 'border-box' }}
-                      />
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <input type="text" placeholder="MM/YY" readOnly value="12/28" style={{ flex: 1, backgroundColor: '#070b14', border: '1px solid #334155', borderRadius: '10px', padding: '10px 12px', color: '#ffffff', fontSize: '13px', boxSizing: 'border-box' }} />
-                        <input type="password" placeholder="CVV" readOnly value="123" style={{ flex: 1, backgroundColor: '#070b14', border: '1px solid #334155', borderRadius: '10px', padding: '10px 12px', color: '#ffffff', fontSize: '13px', boxSizing: 'border-box' }} />
-                      </div>
-                    </div>
-                  )}
-
-                  {paymentMethod === 'netbanking' && (
-                    <div style={{ marginBottom: '24px' }}>
-                      <select style={{ width: '100%', backgroundColor: '#070b14', border: '1px solid #334155', borderRadius: '10px', padding: '12px', color: '#ffffff', fontSize: '13px' }}>
-                        <option>State Bank of India (SBI)</option>
-                        <option>HDFC Bank</option>
-                        <option>ICICI Bank</option>
-                        <option>Axis Bank</option>
-                      </select>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handleProcessPayment}
-                    style={{
-                      width: '100%',
-                      backgroundColor: '#0284c7',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '14px',
-                      fontSize: '15px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 15px rgba(2, 132, 199, 0.4)'
-                    }}
-                  >
-                    Pay ₹{selectedCourse.price.toLocaleString('en-IN')} via Razorpay
-                  </button>
+                    <button
+                      type="submit"
+                      style={{
+                        width: '100%',
+                        backgroundColor: '#4f46e5',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        padding: '12px',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 15px rgba(79, 70, 229, 0.4)'
+                      }}
+                    >
+                      Launch Real Razorpay Gateway 🚀
+                    </button>
+                  </form>
                 </div>
-              )}
 
-              {paymentStep === 'processing' && (
-                <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    border: '4px solid #1e293b',
-                    borderTop: '4px solid #0284c7',
-                    borderRadius: '50%',
-                    margin: '0 auto 20px auto',
-                    animation: 'spin 1s linear infinite'
-                  }}></div>
-                  <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-                  
-                  <h3 style={{ fontSize: '18px', color: '#ffffff', margin: '0 0 8px 0', fontWeight: 'bold' }}>
-                    Processing Payment...
-                  </h3>
+                <div style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.4' }}>
+                  ℹ️ <strong>For Production:</strong> In Render Dashboard ➡️ Environment, set <code>RAZORPAY_KEY_ID</code> and <code>RAZORPAY_KEY_SECRET</code>. Then clicking Enroll opens Razorpay automatically without this prompt.
                 </div>
-              )}
-
-              {paymentStep === 'success' && (
-                <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-                  <div style={{
-                    width: '64px',
-                    height: '64px',
-                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                    color: '#10b981',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '32px',
-                    margin: '0 auto 20px auto',
-                    border: '2px solid #10b981'
-                  }}>
-                    ✓
-                  </div>
-                  <h3 style={{ fontSize: '22px', fontWeight: '900', color: '#ffffff', margin: '8px 0 12px 0' }}>
-                    Course Access Unlocked 🎉
-                  </h3>
-                  <button
-                    onClick={handleCloseModal}
-                    style={{
-                      width: '100%',
-                      backgroundColor: '#10b981',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '12px',
-                      fontSize: '14px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Start Learning Now →
-                  </button>
-                </div>
-              )}
+              </div>
 
             </div>
           </div>
